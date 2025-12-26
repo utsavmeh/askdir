@@ -49,6 +49,29 @@ def chat():
     start_chat(client, config, index, metadata)
 
 @app.command()
+def ui(port: int = 8000):
+    """
+    Start the Web UI.
+    """
+    try:
+        import uvicorn
+        from fastapi import FastAPI
+    except ImportError:
+        console.print("[red]Error: 'fastapi' and 'uvicorn' are required for the UI.[/red]")
+        console.print("Please install them: [bold]pip install fastapi uvicorn[/bold]")
+        raise typer.Exit(code=1)
+        
+    config = load_config()
+    if not config:
+        console.print("[red]No configuration found. Run 'rag init <folder>' first.[/red]")
+        raise typer.Exit(code=1)
+
+    console.print(f"[green]Starting Web UI at http://127.0.0.1:{port}[/green]")
+    console.print("Press Ctrl+C to stop.")
+    
+    uvicorn.run("rag.server:app", host="127.0.0.1", port=port, reload=False)
+
+@app.command()
 def rebuild():
     """
     Rebuild the index using the current configuration.
