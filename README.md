@@ -62,6 +62,10 @@ Launch the local web server to chat in your browser.
 ./rag-cli ui
 ```
 > Open **[http://localhost:8000](http://localhost:8000)** in your browser.
+> 
+> **New Features:**
+> *   **Thinking Indicator**: See when the bot is processing your request.
+> *   **Rebuild from UI**: Click the "Rebuild Index" button to refresh your knowledge base without restarting the server.
 
 ### 3. Chat (Terminal)
 Start a quick interactive session directly in the terminal.
