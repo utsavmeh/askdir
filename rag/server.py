@@ -154,76 +154,319 @@ HTML_CONTENT = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Local RAG Chat</title>
+    <title>Local RAG</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; background: #f4f4f9; display: flex; flex-direction: column; height: 95vh; }
-        
-        /* Header */
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        h1 { margin: 0; font-size: 1.5rem; color: #333; }
-        .rebuild-btn { background: #6c757d; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 0.9rem; }
-        .rebuild-btn:hover { background: #5a6268; }
-
-        /* Chat Area */
-        #chat-container { background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; display: flex; flex-direction: column; flex: 1; position: relative; }
-        #messages { flex: 1; overflow-y: auto; padding: 20px; scroll-behavior: smooth; }
-        
-        .message { margin-bottom: 15px; line-height: 1.5; max-width: 80%; }
-        .user-msg { margin-left: auto; text-align: right; }
-        .user-msg span { background: #007bff; color: white; padding: 10px 15px; border-radius: 15px 15px 0 15px; display: inline-block; }
-        .bot-msg { margin-right: auto; text-align: left; }
-        .bot-msg span { background: #e9ecef; color: #333; padding: 10px 15px; border-radius: 15px 15px 15px 0; display: inline-block; }
-        
-        .sources { font-size: 0.75em; color: #666; margin-top: 5px; font-style: italic; }
-        
-        /* Input Area */
-        #input-area { border-top: 1px solid #ddd; padding: 20px; display: flex; gap: 10px; background: #fff; }
-        input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; outline: none; }
-        input:focus { border-color: #007bff; }
-        button#sendBtn { padding: 10px 25px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; }
-        button#sendBtn:hover { background: #218838; }
-        button:disabled { background: #ccc !important; cursor: not-allowed; }
-
-        /* Thinking Indicator */
-        .thinking { font-style: italic; color: #888; font-size: 0.9rem; margin-bottom: 10px; display: none; align-items: center; gap: 8px; }
-        .thinking .dots { display: inline-block; animation: ellipsis 1.5s infinite; }
-        @keyframes ellipsis {
-            0% { content: '.'; }
-            33% { content: '..'; }
-            66% { content: '...'; }
+        :root {
+            --bg-body: #ffffff;
+            --bg-subtle: #f6f8fa;
+            --border-default: #d0d7de;
+            --border-subtle: #eff2f5;
+            --text-primary: #1f2328;
+            --text-secondary: #656d76;
+            --accent-blue: #0969da;
+            --accent-blue-bg: #ddf4ff;
+            --danger: #cf222e;
+            --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
         }
 
-        /* Modal */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
-        .modal-content { background-color: #fefefe; padding: 25px; border-radius: 8px; width: 400px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
-        .modal h3 { margin-top: 0; }
-        .modal input { width: 100%; box-sizing: border-box; margin: 15px 0; }
-        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
-        .close-btn { background: #ddd; color: #333; }
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-stack);
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* --- Header --- */
+        header {
+            height: 60px;
+            padding: 0 24px;
+            border-bottom: 1px solid var(--border-default);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
         
-        /* Status Bar */
-        #status-bar { display: none; padding: 10px; background: #e2e3e5; color: #383d41; text-align: center; font-size: 0.9rem; border-radius: 4px; margin-bottom: 10px; }
-        .status-success { background: #d4edda !important; color: #155724 !important; }
-        .status-error { background: #f8d7da !important; color: #721c24 !important; }
+        h1::before {
+            content: '';
+            display: block;
+            width: 12px;
+            height: 12px;
+            background: var(--text-primary);
+            border-radius: 50%;
+        }
+
+        .rebuild-btn {
+            background: transparent;
+            border: 1px solid var(--border-default);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .rebuild-btn:hover {
+            background: var(--bg-subtle);
+            color: var(--text-primary);
+            border-color: #b1bac4;
+        }
+
+        /* --- Main Layout --- */
+        #chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 800px; /* Constrained width for readability */
+            width: 100%;
+            margin: 0 auto;
+            position: relative;
+            background: var(--bg-body);
+        }
+
+        #messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            scroll-behavior: smooth;
+        }
+
+        /* --- Messages --- */
+        .message {
+            margin-bottom: 24px;
+            max-width: 100%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message-content {
+            display: inline-block;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            position: relative;
+            max-width: 85%;
+        }
+
+        /* User Message */
+        .user-msg {
+            text-align: right;
+        }
+        .user-msg .message-content {
+            background-color: var(--accent-blue-bg);
+            color: var(--text-primary);
+            border: 1px solid transparent;
+        }
+
+        /* Bot Message */
+        .bot-msg {
+            text-align: left;
+        }
+        .bot-msg .message-content {
+            background-color: var(--bg-subtle);
+            color: var(--text-primary);
+            border: 1px solid var(--border-subtle);
+        }
+
+        .sources {
+            margin-top: 8px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+            padding-top: 8px;
+            border-top: 1px solid rgba(0,0,0,0.05);
+        }
+
+        /* --- Input Area --- */
+        #input-area {
+            padding: 24px;
+            border-top: 1px solid transparent; /* Cleaner look without hard border */
+            background: var(--bg-body); /* Sticky bottom needs bg */
+            display: flex;
+            gap: 12px;
+            position: sticky;
+            bottom: 0;
+        }
+
+        .input-wrapper {
+            position: relative;
+            flex: 1;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border-default);
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            background: var(--bg-body);
+            color: var(--text-primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        input:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.15);
+        }
+
+        button#sendBtn {
+            padding: 0 20px;
+            background: var(--text-primary);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: opacity 0.2s;
+            box-shadow: var(--shadow-sm);
+        }
+
+        button#sendBtn:hover { opacity: 0.9; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* --- Status & Indicators --- */
+        #thinkingIndicator {
+            display: none;
+            padding: 0 24px;
+            margin-bottom: 12px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--text-secondary);
+            border-radius: 50%;
+            opacity: 0.4;
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.4; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.1); }
+        }
+
+        #status-bar {
+            padding: 8px 24px;
+            font-size: 12px;
+            font-weight: 500;
+            text-align: center;
+            display: none;
+        }
+        .status-success { background: #dafbe1; color: #1a7f37; }
+        .status-error { background: #ffebe9; color: var(--danger); }
+        .status-info { background: var(--bg-subtle); color: var(--text-secondary); }
+
+        /* --- Modal --- */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(255,255,255,0.8);
+            backdrop-filter: blur(2px);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            padding: 32px;
+            border-radius: 12px;
+            width: 400px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            border: 1px solid var(--border-default);
+        }
+
+        .modal h3 { margin: 0 0 16px 0; font-size: 18px; }
+        .modal p { color: var(--text-secondary); margin-bottom: 16px; }
+        
+        .modal input { margin-bottom: 24px; }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .btn-secondary:hover { color: var(--text-primary); }
+
+        .btn-primary {
+            background: var(--text-primary);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+        }
 
     </style>
 </head>
 <body>
 
     <header>
-        <h1>🤖 Local RAG</h1>
+        <h1>Local RAG</h1>
         <button class="rebuild-btn" onclick="openModal()">Rebuild Index</button>
     </header>
 
     <div id="status-bar"></div>
 
     <div id="chat-container">
-        <div id="messages"></div>
-        <div class="thinking" id="thinkingIndicator">
-            <span>Thinking</span><span class="dots">...</span>
+        <div id="messages">
+            <!-- Messages will appear here -->
         </div>
+
+        <div id="thinkingIndicator">
+            <div class="pulse-dot"></div>
+            <span>Thinking...</span>
+        </div>
+
         <div id="input-area">
-            <input type="text" id="queryInput" placeholder="Ask a question..." autofocus>
+            <div class="input-wrapper">
+                <input type="text" id="queryInput" placeholder="Ask a question..." autocomplete="off" autofocus>
+            </div>
             <button id="sendBtn" onclick="sendMessage()">Send</button>
         </div>
     </div>
@@ -232,15 +475,16 @@ HTML_CONTENT = """
     <div id="rebuildModal" class="modal">
         <div class="modal-content">
             <h3>Rebuild Index</h3>
-            <p style="font-size: 0.9rem; color: #666;">Enter a new folder path or leave empty to use current.</p>
+            <p>Enter a new folder path to re-index, or leave empty to rebuild using the current configuration.</p>
             <input type="text" id="folderPath" placeholder="/path/to/documents">
             <div class="modal-actions">
-                <button class="close-btn" onclick="closeModal()">Cancel</button>
-                <button onclick="startRebuild()" style="background: #007bff; color: white;">Start Rebuild</button>
+                <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn-primary" onclick="startRebuild()">Start Rebuild</button>
             </div>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
         const input = document.getElementById('queryInput');
         const messagesDiv = document.getElementById('messages');
@@ -248,6 +492,12 @@ HTML_CONTENT = """
         const thinkingIndicator = document.getElementById('thinkingIndicator');
         const modal = document.getElementById('rebuildModal');
         const statusBar = document.getElementById('status-bar');
+
+        // Configure marked to be safe
+        marked.setOptions({
+            breaks: true,
+            gfm: true
+        });
 
         // --- Chat Logic ---
 
@@ -265,7 +515,7 @@ HTML_CONTENT = """
             input.disabled = true;
             sendBtn.disabled = true;
             thinkingIndicator.style.display = 'flex';
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            scrollToBottom();
 
             try {
                 const response = await fetch('/chat', {
@@ -291,7 +541,7 @@ HTML_CONTENT = """
                 sendBtn.disabled = false;
                 thinkingIndicator.style.display = 'none';
                 input.focus();
-                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                scrollToBottom();
             }
         }
 
@@ -299,22 +549,38 @@ HTML_CONTENT = """
             const msgDiv = document.createElement('div');
             msgDiv.className = `message ${sender}-msg`;
             
-            let content = `<span>${text.replace(/\\n/g, '<br>')}</span>`;
+            // Use marked for Markdown rendering
+            let contentHtml = `<div class="message-content"><span>${marked.parse(text)}</span>`;
             
             if (sources && sources.length > 0) {
                 const uniqueSources = [...new Set(sources)];
-                content += `<div class="sources">Sources: ${uniqueSources.join(', ')}</div>`;
+                contentHtml += `<div class="sources">Sources: ${uniqueSources.join(', ')}</div>`;
             }
+            contentHtml += `</div>`;
             
-            msgDiv.innerHTML = content;
+            msgDiv.innerHTML = contentHtml;
             messagesDiv.appendChild(msgDiv);
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
 
         // --- Rebuild Logic ---
 
-        function openModal() { modal.style.display = 'flex'; }
+        function openModal() { 
+            modal.style.display = 'flex'; 
+            document.getElementById('folderPath').focus();
+        }
         function closeModal() { modal.style.display = 'none'; }
+
+        // Close modal on outside click
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
 
         async function startRebuild() {
             const folder = document.getElementById('folderPath').value.trim();
@@ -345,7 +611,7 @@ HTML_CONTENT = """
                     const data = await res.json();
                     
                     if (data.status === 'running') {
-                        showStatus(data.message + " <span class='dots'>...</span>");
+                        showStatus(data.message, "info");
                         input.disabled = true;
                         sendBtn.disabled = true;
                     } else if (data.status === 'success') {
@@ -359,6 +625,9 @@ HTML_CONTENT = """
                         showStatus(data.message, "error");
                         input.disabled = false;
                         sendBtn.disabled = false;
+                    } else {
+                        // Idle or unknown, stop polling
+                        clearInterval(interval);
                     }
                 } catch (e) {
                     clearInterval(interval);
@@ -371,11 +640,20 @@ HTML_CONTENT = """
             statusBar.className = '';
             if (type === 'success') statusBar.classList.add('status-success');
             if (type === 'error') statusBar.classList.add('status-error');
+            if (type === 'info') statusBar.classList.add('status-info');
             statusBar.innerHTML = msg;
         }
         
-        // Check status on load in case a rebuild is running
-        pollStatus();
+        // Check status on load: Only poll if actually running
+        (async function checkExistingRebuild() {
+            try {
+                const res = await fetch('/rebuild/status');
+                const data = await res.json();
+                if (data.status === 'running') {
+                    pollStatus();
+                }
+            } catch (e) {}
+        })();
 
     </script>
 </body>

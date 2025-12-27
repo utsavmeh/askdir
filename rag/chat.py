@@ -6,10 +6,13 @@ console = Console()
 
 def generate_response(client, model_name: str, context_text: str, query: str) -> str:
     """Generates an answer using the LLM based on context."""
-    # Strict Prompt
     system_prompt = (
-        "You are a helpful assistant. Use the following context to answer the user's question. "
-        "If the answer is not contained in the context, say 'I don't know'."
+        "You are a strict assistant that answers questions based ONLY on the provided context.\n"
+        "Rules:\n"
+        "1. If the user greets you (e.g., 'Hi'), respond politely.\n"
+        "2. Answer the question using ONLY the text in the 'Context' section below.\n"
+        "3. Do NOT use your own internal knowledge or facts from the internet.\n"
+        "4. If the answer to the question is not present in the 'Context' section, you MUST respond with exactly: 'I don't know'."
     )
     
     user_message = f"Context:\n{context_text}\n\nQuestion: {query}"
