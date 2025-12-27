@@ -1,45 +1,43 @@
 # 🤖 Local RAG CLI & Web UI
 
-A privacy-focused, 100% local Retrieval-Augmented Generation (RAG) tool. It turns any folder of documents (`.txt`, `.md`, `.pdf`) into a searchable knowledge base that you can chat with via your terminal or a web browser.
+A professional, 100% local Retrieval-Augmented Generation (RAG) system. Turn any directory of documents (`.pdf`, `.md`, `.txt`) into a searchable knowledge base with a clean Web UI and a powerful CLI.
 
-**Stack:** Python, Ollama, FAISS, FastAPI, Typer.
+**Built for developers who value privacy and simplicity.**
 
 ## ✨ Features
 
-*   **100% Local**: No data leaves your machine. Powered by Ollama.
-*   **Dual Interface**:
-    *   💻 **CLI**: Fast, keyboard-centric terminal chat.
-    *   🌐 **Web UI**: Clean, simple browser interface with source citations.
-*   **Strict Answers**: The bot answers *only* from your documents to reduce hallucinations.
-*   **Fast Retrieval**: Uses FAISS for efficient vector similarity search.
+*   **100% Local**: No data ever leaves your machine. Powered by Ollama.
+*   **Modern Web UI**: Clean, developer-tool aesthetic with "thinking" states and markdown support.
+*   **Dual Interface**: Switch between a terminal-based REPL and a browser-based chat.
+*   **Strict Context**: Instructs the LLM to answer *only* from your data to prevent hallucinations.
+*   **On-the-fly Rebuilding**: Refresh your index directly from the UI or CLI.
+*   **Opinionated Defaults**: Pre-configured with `deepseek-r1` and `nomic-embed-text`.
 
 ---
 
 ## 🚀 Prerequisites
 
-1.  **Python 3.9+** installed.
-2.  **Ollama**: Download from [ollama.com](https://ollama.com).
+1.  **Python 3.9+**
+2.  **Ollama**: Install from [ollama.com](https://ollama.com).
 
-### Model Setup
-You need to pull the specific models this tool uses (Embeddings + Chat):
-
+### Default Model Setup
+By default, this tool expects the following models:
 ```bash
-# Pull the models (approx 2GB total)
 ollama pull nomic-embed-text
 ollama pull deepseek-r1:1.5b
 ```
-*Ensure Ollama is running in the background (`ollama serve`).*
+*Ensure Ollama is running (`ollama serve`).*
 
 ---
 
 ## 📦 Installation
 
-1.  **Install Python Dependencies**:
+1.  **Install Dependencies**:
     ```bash
     python3 -m pip install "typer[all]" pyyaml rich openai faiss-cpu numpy pypdf fastapi uvicorn
     ```
 
-2.  **Enable the Wrapper Script**:
+2.  **Prepare the Launcher**:
     ```bash
     chmod +x rag-cli
     ```
@@ -48,55 +46,53 @@ ollama pull deepseek-r1:1.5b
 
 ## 🛠 Usage
 
-### 1. Initialize Index
-Scan a folder and build the search index. This creates a `rag.yaml` config file and a hidden `.rag_index` directory in your current path.
-
+### 1. Initialize
+Scan a folder to build the initial vector index. This creates a `rag.yaml` config and a `.rag_index/` folder.
 ```bash
-./rag-cli init /path/to/your/documents
+./rag-cli init /path/to/your/docs
 ```
 
-### 2. Chat (Web UI)
-Launch the local web server to chat in your browser.
-
+### 2. Chat via Web UI (Recommended)
+Launch the browser-based interface.
 ```bash
 ./rag-cli ui
 ```
-> Open **[http://localhost:8000](http://localhost:8000)** in your browser.
-> 
-> **New Features:**
-> *   **Thinking Indicator**: See when the bot is processing your request.
-> *   **Rebuild from UI**: Click the "Rebuild Index" button to refresh your knowledge base without restarting the server.
+> Access at: **[http://localhost:8000](http://localhost:8000)**
 
-### 3. Chat (Terminal)
-Start a quick interactive session directly in the terminal.
-
+### 3. Chat via Terminal
+For quick CLI access:
 ```bash
 ./rag-cli chat
 ```
 
 ### 4. Rebuild Index
-If you add new files to your folder or modify `rag.yaml`, update the index:
-
+If you add or change documents, sync the index:
 ```bash
 ./rag-cli rebuild
 ```
+*(You can also do this via the "Rebuild Index" button in the Web UI).*
 
 ---
 
-## ⚙️ Configuration
-After running `init`, a `rag.yaml` file is generated. You can customize it:
+## ⚙️ Customizing Models
 
-```yaml
-folder_path: /path/to/your/documents
-chunk_size: 1000        # Character count per chunk
-overlap: 200            # Overlap to preserve context
-embedding_model: nomic-embed-text
-chat_model: deepseek-r1:1.5b
-client_base_url: http://localhost:11434/v1
-ignore_dirs:
-  - .git
-  - node_modules
-```
+You can use **any model** supported by Ollama. To switch models:
+
+1.  **Pull the new model**:
+    ```bash
+    ollama pull llama3
+    ```
+2.  **Update `rag.yaml`**:
+    Open the generated `rag.yaml` file and change the model names:
+    ```yaml
+    embedding_model: nomic-embed-text  # Model for vector search
+    chat_model: llama3                 # Model for generating answers
+    ```
+3.  **Rebuild**:
+    If you changed the `embedding_model`, you **must** rebuild the index:
+    ```bash
+    ./rag-cli rebuild
+    ```
 
 ---
 
@@ -104,20 +100,27 @@ ignore_dirs:
 
 ```text
 .
-├── rag-cli             # Executable wrapper script
-├── rag.yaml            # Configuration (auto-generated)
-├── .rag_index/         # FAISS index & metadata storage
-├── rag/                # Source Code
-│   ├── cli.py          # Command line entry points
-│   ├── server.py       # FastAPI backend & HTML frontend
-│   ├── ingest.py       # File loader
-│   ├── index.py        # Vector database logic
-│   └── chat.py         # Generation logic
-└── README.md
+├── rag-cli             # CLI Launcher
+├── rag.yaml            # Local Configuration (Auto-generated)
+├── .rag_index/         # FAISS Index & Metadata (Auto-generated)
+└── rag/                # Source Code
+    ├── cli.py          # CLI commands (init, chat, ui)
+    ├── server.py       # FastAPI backend & Web UI
+    ├── chat.py         # LLM interaction logic
+    ├── index.py        # FAISS & Embedding logic
+    ├── ingest.py       # File scanning & PDF parsing
+    ├── chunking.py     # Text splitting logic
+    ├── config.py       # YAML Configuration handler
+    └── utils.py        # Shared helpers
 ```
 
-## ❓ Troubleshooting
+## ❓ FAQ
 
-*   **"Permission denied"**: Use `./rag-cli` instead of trying to run `rag` directly if you haven't installed the package globally.
-*   **"Connection refused"**: Make sure `ollama serve` is running.
-*   **"I don't know"**: The bot is instructed to be strict. If the answer isn't in your files, it won't make one up.
+**Can I use it for my resume?**
+Yes. Point it at a folder with your resume PDF, run `init`, and ask questions like "What are the user's skills?"
+
+**Why does it say "I don't know"?**
+The system prompt is very strict. It will refuse to answer if the information is not explicitly found in your documents.
+
+**Does it support folders?**
+Yes, it recursively scans all sub-folders, ignoring common junk like `.git` and `node_modules`.
